@@ -18,8 +18,6 @@ build_swift_app() {
 
 build_swift_app ConsoleDeck ConsoleDeck "$project_dir/Info.plist" \
     -parse-as-library "$project_dir"/Sources/*.swift
-build_swift_app "ConsoleDeck Mic Status" ConsoleDeckMicStatus "$project_dir/MicStatus/Info.plist" \
-    "$project_dir/MicStatus/main.swift"
 build_swift_app "Mute Microphone" MuteMicrophone "$project_dir/Launchers/Info-microphone.plist" \
     "$project_dir/Launchers/Mute Microphone.swift"
 

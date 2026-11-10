@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import OSLog
 import ServiceManagement
 import SwiftUI
 
@@ -328,6 +329,11 @@ final class DeckDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWin
     let deck = DeckModel()
     private var statusItem: NSStatusItem?
     private let connectionItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let microphoneItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let log = Logger(subsystem: "local.codex.consoledeck", category: "microphone")
+    private lazy var microphone = MicrophoneStatus { [weak self] state in
+        self?.updateMicrophoneIndicator(state)
+    }
     private var window: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -337,6 +343,7 @@ final class DeckDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWin
         let menu = NSMenu()
         menu.delegate = self
         menu.addItem(connectionItem)
+        menu.addItem(microphoneItem)
         menu.addItem(.separator())
         let configure = NSMenuItem(title: "Configure Buttons…", action: #selector(showSettings), keyEquivalent: ",")
         configure.target = self
@@ -344,6 +351,7 @@ final class DeckDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWin
         menu.addItem(NSMenuItem(title: "Quit ConsoleDeck", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         item.menu = menu
         statusItem = item
+        microphone.start()
         deck.connect()
 
         if CommandLine.arguments.contains("--setup") {
@@ -354,6 +362,27 @@ final class DeckDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWin
 
     func menuWillOpen(_ menu: NSMenu) {
         connectionItem.title = deck.connection
+        microphone.refresh()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        microphone.stop()
+    }
+
+    private func updateMicrophoneIndicator(_ state: MicState) {
+        guard let button = statusItem?.button else { return }
+        let size = NSImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
+        let configuration = state == .muted
+            ? size.applying(NSImage.SymbolConfiguration(paletteColors: [.systemRed]))
+            : size
+        let icon = NSImage(systemSymbolName: state.symbol, accessibilityDescription: state.rawValue)?
+            .withSymbolConfiguration(configuration)
+        icon?.isTemplate = state != .muted
+        button.image = icon
+        button.toolTip = "ConsoleDeck · \(state.rawValue)"
+        button.setAccessibilityLabel("ConsoleDeck, \(state.rawValue)")
+        microphoneItem.title = state.rawValue
+        log.notice("ConsoleDeck menu shows \(state.rawValue, privacy: .public)")
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

@@ -40,9 +40,8 @@ Adjust the pin definitions in the sketch if your wiring differs.
 
 Move `.build/Mute Microphone.app` to a permanent location and assign it
 to a button with **Open App, File or Folder**. It toggles the Mac's default
-input on devices that expose a native mute control. Move `.build/ConsoleDeck Mic Status.app` to your Applications folder and open it to show the input's actual mute state
-in the menu bar. A red crossed-out microphone indicates mute. The
-indicator has its own **Start Mic Indicator at Login** setting.
+input on devices that expose a native mute control. ConsoleDeck’s own menu bar icon turns into a red crossed-out microphone
+when that input is muted. Its menu also shows the current state.
 
 To build the optional Spotify launcher, install the Spotify desktop app
 and run `./build.sh --spotify`. Move `.build/Spotify Play-Pause.app` to a

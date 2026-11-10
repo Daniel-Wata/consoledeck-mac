@@ -40,10 +40,12 @@ Adjust the pin definitions in the sketch if your wiring differs.
 
 Move `.build/Mute Microphone.app` to a permanent location and assign it
 to a button with **Open App, File or Folder**. It toggles the Mac's default
-input on devices that expose a native mute control. ConsoleDeck’s own menu bar icon turns into a red crossed-out microphone
-when that input is muted. Its menu also shows the current state.
+input on devices that expose a native mute control. ConsoleDeck’s menu bar
+icon turns into a red crossed-out microphone when the input is muted. Its
+menu also shows the current state.
 
-To build the optional Spotify launcher, install the Spotify desktop app
-and run `./build.sh --spotify`. Move `.build/Spotify Play-Pause.app` to a
-permanent location and assign it to Media. Allow the launcher to control
-Spotify when macOS prompts on first use.
+To build the optional Spotify launchers, install the Spotify desktop app
+and run `./build.sh --spotify`. Move `.build/Spotify Play-Pause.app` and
+`.build/Spotify Next Track.app` to a permanent location. Assign them to Media
+and a grid button with **Open App, File or Folder**. Allow each launcher to
+control Spotify when macOS prompts on first use.

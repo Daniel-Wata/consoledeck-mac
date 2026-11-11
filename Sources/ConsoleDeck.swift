@@ -226,11 +226,11 @@ struct DeckSettings: View {
 
             Divider()
             HStack {
-                Label(deck.mediaAllowed ? "Media keys allowed" : "Accessibility needed for media keys",
+                Label(deck.mediaAllowed ? "Keyboard control allowed" : "Keyboard control requires Accessibility",
                       systemImage: deck.mediaAllowed ? "checkmark.shield" : "lock.shield")
                 Spacer()
                 if !deck.mediaAllowed {
-                    Button("Allow Media Keys…") { deck.requestMediaAccess() }
+                    Button("Allow Keyboard Control…") { deck.requestMediaAccess() }
                 }
             }
             HStack {

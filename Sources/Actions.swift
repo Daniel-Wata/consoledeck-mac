@@ -26,16 +26,6 @@ enum ActionKind: String, CaseIterable, Codable, Identifiable {
         case .volumeDown: return "speaker.wave.1"
         }
     }
-
-    var mediaKey: Int? {
-        switch self {
-        case .playPause: return Int(NX_KEYTYPE_PLAY)
-        case .mute: return Int(NX_KEYTYPE_MUTE)
-        case .volumeUp: return Int(NX_KEYTYPE_SOUND_UP)
-        case .volumeDown: return Int(NX_KEYTYPE_SOUND_DOWN)
-        default: return nil
-        }
-    }
 }
 
 struct RecordedShortcut: Codable, Equatable {
@@ -95,7 +85,8 @@ struct DeckAction: Codable, Equatable {
     }
 
     func run() -> String {
-        if let mediaKey = kind.mediaKey {
+        switch kind {
+        case .playPause:
             guard CGPreflightPostEventAccess() else { return "Accessibility permission needed" }
             for state in [0x0a, 0x0b] {
                 let event = NSEvent.otherEvent(
@@ -103,15 +94,12 @@ struct DeckAction: Codable, Equatable {
                     modifierFlags: NSEvent.ModifierFlags(rawValue: UInt(state << 8)),
                     timestamp: 0, windowNumber: 0, context: nil,
                     subtype: Int16(NX_SUBTYPE_AUX_CONTROL_BUTTONS),
-                    data1: (mediaKey << 16) | (state << 8), data2: -1
+                    data1: (Int(NX_KEYTYPE_PLAY) << 16) | (state << 8), data2: -1
                 )
                 guard let cgEvent = event?.cgEvent else { return "Could not create a media event" }
                 cgEvent.post(tap: .cghidEventTap)
             }
             return "Media key sent"
-        }
-
-        switch kind {
         case .none:
             return "Unassigned"
         case .openItem:
@@ -130,8 +118,47 @@ struct DeckAction: Codable, Equatable {
                 event.post(tap: .cghidEventTap)
             }
             return "Keyboard shortcut sent"
-        default:
-            return "Action unavailable"
+        case .volumeUp:
+            return SystemVolume.run(SystemVolume.raise)
+        case .volumeDown:
+            return SystemVolume.run(SystemVolume.lower)
+        case .mute:
+            return SystemVolume.run(SystemVolume.toggleMute)
         }
+    }
+}
+
+private enum SystemVolume {
+    // Standard Additions runs these commands in the app without posting key events.
+    static let raise = adjustment(by: 6)
+    static let lower = adjustment(by: -6)
+    static let toggleMute = NSAppleScript(source: """
+        set oldMute to output muted of (get volume settings)
+        if oldMute is missing value then error "Output mute is unavailable"
+        set volume output muted (not oldMute)
+        set newMute to output muted of (get volume settings)
+        if newMute is oldMute then error "Output mute did not change"
+        if newMute then return "Speakers muted"
+        return "Speakers unmuted"
+        """)
+
+    private static func adjustment(by step: Int) -> NSAppleScript? {
+        NSAppleScript(source: """
+            set oldVolume to output volume of (get volume settings)
+            if oldVolume is missing value then error "Output volume is unavailable"
+            set nextVolume to oldVolume + (\(step))
+            if nextVolume > 100 then set nextVolume to 100
+            if nextVolume < 0 then set nextVolume to 0
+            set volume output volume nextVolume without output muted
+            set actualVolume to output volume of (get volume settings)
+            if actualVolume is missing value then error "Output volume is unavailable"
+            if nextVolume is not oldVolume and actualVolume is oldVolume then error "Output volume did not change"
+            return "Volume " & actualVolume & "%"
+            """)
+    }
+
+    static func run(_ script: NSAppleScript?) -> String {
+        let result = script?.executeAndReturnError(nil)
+        return result?.stringValue ?? "Could not adjust output audio"
     }
 }
